@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import styled from 'styled-components'
 
 import { getProducts } from './products-data'
@@ -25,6 +25,16 @@ export const ProductsTitle = styled(Heading)`
 
 function ProductsSection() {
   const [activeFilter, setActiveFilter] = useState('All')
+  const [products, setProducts] = useState([])
+
+  useEffect(() => {
+    async function mockFetchingData() {
+      await new Promise((r) => setTimeout(r, 1500)) // sleep for 1500ms
+      setProducts(getProducts(activeFilter))
+    }
+
+    mockFetchingData()
+  }, [activeFilter])
 
   function onChangeFilter(filter) {
     setActiveFilter(filter)
@@ -41,7 +51,7 @@ function ProductsSection() {
         ></ProductsFilters>
       </ProductsHeading>
 
-      <ProductsList products={getProducts(activeFilter)} />
+      <ProductsList products={products} />
     </Container>
   )
 }

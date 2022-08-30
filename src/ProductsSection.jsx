@@ -24,20 +24,30 @@ export const ProductsTitle = styled(Heading)`
 `
 
 function ProductsSection() {
-  const [activeFilter, setActiveFilter] = useState('All')
+  const [activeFilter, setActiveFilter] = useState({
+    current: 'All',
+    prev: null,
+  })
+  const [loading, setLoading] = useState(true)
   const [products, setProducts] = useState([])
 
   useEffect(() => {
     async function mockFetchingData() {
-      await new Promise((r) => setTimeout(r, 1500)) // sleep for 1500ms
-      setProducts(getProducts(activeFilter))
+      setLoading(true)
+      await new Promise((r) => setTimeout(r, 2200)) // sleep
+
+      setLoading(false)
+      setProducts(getProducts(activeFilter.current))
     }
 
     mockFetchingData()
   }, [activeFilter])
 
   function onChangeFilter(filter) {
-    setActiveFilter(filter)
+    setActiveFilter((activeFilter) => ({
+      prev: activeFilter.current,
+      current: filter,
+    }))
   }
 
   return (
@@ -51,7 +61,11 @@ function ProductsSection() {
         ></ProductsFilters>
       </ProductsHeading>
 
-      <ProductsList products={products} />
+      <ProductsList
+        loading={loading}
+        activeFilter={activeFilter}
+        products={products}
+      />
     </Container>
   )
 }

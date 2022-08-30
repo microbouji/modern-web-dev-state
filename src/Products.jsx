@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { Transition, TransitionGroup } from 'react-transition-group'
 import styled from 'styled-components'
+import { AnimatePresence, motion } from 'framer-motion'
 
 import { bodyPadding, Heading, SubHeading } from './BaseStyles'
-
-const timeout = 400
 
 const ProductsSelect = styled.select`
   appearance: none;
@@ -69,21 +67,11 @@ const StyledProductsList = styled.ul`
   -webkit-overflow-scrolling: touch;
   display: grid;
   overflow-x: auto;
+  overflow-y: hidden;
   grid-auto-flow: column;
   grid-auto-columns: 80%;
   column-gap: 1.75em;
   padding-bottom: 2em;
-
-  opacity: 1;
-  will-change: opacity, transform;
-  transition: opacity ${timeout}ms ease-out, transform ${timeout}ms ease-in;
-
-  ${({ state }) =>
-    state === 'exiting' &&
-    `
-      opacity: 0;
-      transform: scale(0.9) translateY(-5%);
-    `};
 
   @media (min-width: 48em) {
     grid-template-columns: repeat(3, 1fr);
@@ -96,14 +84,20 @@ const StyledProductsList = styled.ul`
   }
 `
 
-const StyledProduct = styled.li`
+const StyledProduct = styled(motion.li)`
   scroll-snap-align: start;
   position: relative;
-  display: ${({ state }) => (state === 'entering' ? 'none' : 'flex')};
+  display: flex;
   padding: 2.25em 2.25em 0;
   flex-direction: column;
   background-color: #faf4ef;
+  background-image: linear-gradient(90deg, #faf4ef 40%, white 50%, #faf4ef 60%);
+  background-size: 400%;
   border-radius: 0 0 0 50px;
+`
+
+const StyledProductSkeleton = styled(StyledProduct)`
+  height: 420px;
 `
 
 const ProductName = styled(Heading)`
@@ -154,18 +148,6 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   currency: 'USD',
 })
 
-function Product({ name, link, price, img, alt, ...props }) {
-  return (
-    <StyledProduct {...props}>
-      <ProductName>
-        <a href={link}>{name}</a>
-      </ProductName>
-      <ProductPrice>{currencyFormatter.format(price)}</ProductPrice>
-      <ProductImg src={`img/products/${img}`} alt={alt} />
-    </StyledProduct>
-  )
-}
-
 export function ProductsFilters({ filters, activeFilter, onChangeFilter }) {
   return (
     <React.Fragment>
@@ -180,7 +162,7 @@ export function ProductsFilters({ filters, activeFilter, onChangeFilter }) {
               id={filter}
               name="category"
               value={filter}
-              checked={filter === activeFilter}
+              checked={filter === activeFilter.current}
               onChange={() => onChangeFilter(filter)}
             />
             <Label htmlFor={filter}>{filter}</Label>
@@ -190,7 +172,7 @@ export function ProductsFilters({ filters, activeFilter, onChangeFilter }) {
 
       <ProductsSelect
         aria-controls="products-list"
-        value={activeFilter}
+        value={activeFilter.current}
         onChange={(e) => onChangeFilter(e.target.value)}
       >
         {filters.map((filter, i) => (
@@ -203,34 +185,89 @@ export function ProductsFilters({ filters, activeFilter, onChangeFilter }) {
   )
 }
 
-export function ProductsList({ products }) {
-  const [listFadeOut, setListFadeOut] = useState(false)
+const timeout = 0.4
 
-  useEffect(() => setListFadeOut(true), [products])
+const transition = {
+  duration: timeout,
+}
 
+const card = {
+  hidden: {
+    opacity: 0,
+    scale: 0.9,
+    transition,
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition,
+    'background-position-x': '0%',
+  },
+  loading: {
+    opacity: 1,
+    scale: 1,
+    'background-position-x': ['100%', '0%'],
+    transition: {
+      'background-position-x': {
+        duration: 1.5,
+        repeat: Infinity,
+      },
+      default: { transition },
+    },
+  },
+}
+
+const cardContent = {
+  ...card,
+  hidden: {
+    ...card.hidden,
+    opacity: 0.05,
+  },
+  loading: {
+    ...card.hidden,
+    opacity: 0.05,
+  },
+}
+
+export function ProductsList({ loading, activeFilter, products }) {
   return (
-    <Transition
-      in={!listFadeOut}
-      timeout={timeout}
-      onExited={() => setListFadeOut(false)}
+    <StyledProductsList
+      aria-live="polite"
+      aria-atomic="true"
+      aria-relevant="additions removals"
     >
-      {(state) => (
-        <StyledProductsList
-          id="products-list"
-          aria-live="polite"
-          aria-atomic="true"
-          aria-relevant="additions removals"
-          state={state}
-        >
-          <TransitionGroup component={null}>
-            {products.map(({ id, ...props }) => (
-              <Transition key={id} timeout={timeout}>
-                {(state) => <Product state={state} {...props} />}
-              </Transition>
-            ))}
-          </TransitionGroup>
-        </StyledProductsList>
-      )}
-    </Transition>
+      <AnimatePresence exitBeforeEnter={activeFilter.prev !== 'All'}>
+        {products.length
+          ? products.map(({ id, name, link, price, img, alt }) => (
+              <StyledProduct
+                key={id}
+                variants={card}
+                initial="hidden"
+                animate={loading ? 'loading' : 'visible'}
+                exit="hidden"
+                layout={true}
+              >
+                <motion.div variants={cardContent}>
+                  <ProductName>
+                    <a href={link}>{name}</a>
+                  </ProductName>
+                  <ProductPrice>{currencyFormatter.format(price)}</ProductPrice>
+                  <ProductImg src={`img/products/${img}`} alt={alt} />
+                </motion.div>
+              </StyledProduct>
+            ))
+          : new Array(3)
+              .fill(null)
+              .map((_, i) => (
+                <StyledProductSkeleton
+                  key={-1 * (i + 1)}
+                  variants={card}
+                  initial="hidden"
+                  animate={'loading'}
+                  exit="hidden"
+                ></StyledProductSkeleton>
+              ))}
+      </AnimatePresence>
+    </StyledProductsList>
   )
 }

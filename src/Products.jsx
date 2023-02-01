@@ -238,7 +238,7 @@ export function ProductsList({ loading, activeFilter, products }) {
     >
       <AnimatePresence exitBeforeEnter={activeFilter.prev !== 'All'}>
         {products.length
-          ? products.map(({ id, name, link, price, img, alt }) => (
+          ? products.map(({ id, name, link, price, image, alt }) => (
               <StyledProduct
                 key={id}
                 variants={card}
@@ -252,7 +252,7 @@ export function ProductsList({ loading, activeFilter, products }) {
                     <a href={link}>{name}</a>
                   </ProductName>
                   <ProductPrice>{currencyFormatter.format(price)}</ProductPrice>
-                  <ProductImg src={`img/products/${img}`} alt={alt} />
+                  <ProductImg src={`${image}`} alt={alt} />
                 </motion.div>
               </StyledProduct>
             ))

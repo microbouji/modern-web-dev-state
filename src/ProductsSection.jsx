@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import styled from 'styled-components'
 
-import { getProducts } from './products-data'
 import { Container, Heading } from './BaseStyles'
 import { ProductsFilters, ProductsList } from './Products'
 
@@ -32,15 +31,22 @@ function ProductsSection() {
   const [products, setProducts] = useState([])
 
   useEffect(() => {
-    async function mockFetchingData() {
-      setLoading(true)
-      await new Promise((r) => setTimeout(r, 2200)) // sleep
-
-      setLoading(false)
-      setProducts(getProducts(activeFilter.current))
+    let endpoint =
+      'https://c300bbvloc.execute-api.us-east-1.amazonaws.com/dev/products'
+    if (activeFilter.current !== 'All') {
+      endpoint += '/' + activeFilter.current
     }
 
-    mockFetchingData()
+    async function getProducts() {
+      setLoading(true)
+      const response = await fetch(endpoint)
+      const data = await response.json()
+
+      setLoading(false)
+      setProducts(data)
+    }
+
+    getProducts()
   }, [activeFilter])
 
   function onChangeFilter(filter) {

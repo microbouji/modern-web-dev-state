@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import styled from 'styled-components'
+import ky from 'ky'
 
 import { Container, Heading } from './BaseStyles'
 import { ProductsFilters, ProductsList } from './Products'
@@ -39,8 +40,7 @@ function ProductsSection() {
 
     async function getProducts() {
       setLoading(true)
-      const response = await fetch(endpoint)
-      const data = await response.json()
+      const data = await ky.get(endpoint).json()
 
       setLoading(false)
       setProducts(data)

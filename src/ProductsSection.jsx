@@ -29,6 +29,7 @@ function ProductsSection() {
     prev: null,
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [products, setProducts] = useState([])
 
   useEffect(() => {
@@ -39,11 +40,16 @@ function ProductsSection() {
     }
 
     async function getProducts() {
+      setError(null)
       setLoading(true)
-      const data = await ky.get(endpoint).json()
+      try {
+        const data = await ky.get(endpoint).json()
+        setProducts(data)
+      } catch (e) {
+        setError(e)
+      }
 
       setLoading(false)
-      setProducts(data)
     }
 
     getProducts()
@@ -67,11 +73,15 @@ function ProductsSection() {
         ></ProductsFilters>
       </ProductsHeading>
 
-      <ProductsList
-        loading={loading}
-        activeFilter={activeFilter}
-        products={products}
-      />
+      {error ? (
+        error.message
+      ) : (
+        <ProductsList
+          loading={loading}
+          activeFilter={activeFilter}
+          products={products}
+        />
+      )}
     </Container>
   )
 }

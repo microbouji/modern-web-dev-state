@@ -33,6 +33,7 @@ function ProductsSection() {
   const [products, setProducts] = useState([])
 
   useEffect(() => {
+    let cancelled = false
     let endpoint =
       'https://c300bbvloc.execute-api.us-east-1.amazonaws.com/dev/products'
     if (activeFilter.current !== 'All') {
@@ -44,15 +45,19 @@ function ProductsSection() {
       setLoading(true)
       try {
         const data = await ky.get(endpoint).json()
-        setProducts(data)
+        if (!cancelled) setProducts(data)
       } catch (e) {
-        setError(e)
+        if (!cancelled) setError(e)
       }
 
-      setLoading(false)
+      if (!cancelled) setLoading(false)
     }
 
     getProducts()
+
+    return () => {
+      cancelled = true
+    }
   }, [activeFilter])
 
   function onChangeFilter(filter) {
